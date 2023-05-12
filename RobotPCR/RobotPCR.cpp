@@ -1,3 +1,14 @@
+//Librerías
+
+#include <Servo.h>
+
+//Defines con los pines de la placa
+
+#define pin_sensorCodo A0  //Ejemplo pin sensor del codo
+#define pin_servoCodo 1    //Ejemplo pin servo del codo
+
+//Estados
+
 enum Estado
 {
     E_Inicial,       //Posición inicial, pinza abierta
@@ -9,65 +20,188 @@ enum Estado
     E_Alejar,        //Alejamiento de la entrada (traslación)
     E_Vuelta,        //Vuelta a la posición del apósito (rotación codo)
     E_SoltarAposito  //Apertura de la pinza (mov. sin realimentar)
-  //E_VueltaInicial  //Vuelta al estado inicial, no sé si hay que hacer este estado o por cinemática vale con el inicial
+  //E_VueltaInicial  //Vuelta al estado inicial, no sé si hay que hacer este estado o por cinemática se puede evitar
 };
+
+//Actuadores
+
+Servo servoCodo;  //Ejemplo
 
 //Variables globales
 
 Estado estadoActual;
+
+////Sensores
+
+int raw_sensorCodo;
 
 //Llamada a transiciones de estado 
 
 void Estado_Inicial()
 {
     if ()                                           //Si se encuenta en la posición inicial (sensor codo y sensor base) 
-        actualizarEstado(Estado::E_Aposito);
+        cambiarEstado(Estado::E_Aposito);
 }
 
 void Estado_Aposito()
 {
     if ()                                           //Si se encuenta en la posición del apósito (sensor codo (sensor base redundante)) 
-        actualizarEstado(Estado::E_CogerAposito);
+        cambiarEstado(Estado::E_CogerAposito);
 }
 
 void Estado_CogerAposito()
 {
     if ()                                           //Si la pinza se ha cerrado, este mov. no está realimentado así que habrá que poner un delay y ya
-        actualizarEstado(Estado::E_Colocar);
+        cambiarEstado(Estado::E_Colocar);
 }
 
 void Estado_Colocar()
 {
     if ()                                           //Si se ha colocado en el ángulo de entrada (sensor codo (sensor base redundante)) 
-        actualizarEstado(Estado::E_Acercar);
+        cambiarEstado(Estado::E_Acercar);
 }
 
 void Estado_Acercar()
 {
     if ()                                           //Si se acercado hasta la entrada (sensor base (sensor codo redundante)) 
-        actualizarEstado(Estado::E_Rotar);
+        cambiarEstado(Estado::E_Rotar);
 }
 
 void Estado_Rotar()
 {
     if ()                                           //Si la muñeca ha rotado, este mov. no esta realimentado así que habrá que poner un delay y ya 
-        actualizarEstado(Estado::E_Alejar);
+        cambiarEstado(Estado::E_Alejar);
 }
 
 void Estado_Alejar()
 {
     if ()                                           //Si se ha alejado de la entrada hasta la posición inicial (sensor base (sensor codo redundante)) 
-        actualizarEstado(Estado::E_Vuelta);
+        cambiarEstado(Estado::E_Vuelta);
 }
 
 void Estado_Vuelta()
 {
     if ()                                           //Si se encuenta en la posición del apósito (sensor codo (sensor base redundante)) 
-        actualizarEstado(Estado::E_SoltarAposito);
+        cambiarEstado(Estado::E_SoltarAposito);
 }
 
 void Estado_SoltarAposito()
 {
     if ()                                           //Si se encuenta en la posición del apósito (sensor codo (sensor base redundante)) 
-        actualizarEstado(Estado::E_Inicial);         //Esto depende si se añade nuevo estado    
+        cambiarEstado(Estado::E_Inicial);        //Esto depende si se añade nuevo estado    
+}
+
+//Salidas de cada estado (acciones)
+
+void Salida_Inicial()
+{
+    //Mover a la posición inicial (servo codo, motores base y servo muñeca) y abrir pinza (servo pinza)
+}
+
+void Salida_Aposito()
+{
+    //Mover a la posición del apósito (servo codo)
+
+    servoCodo.write();
+}
+
+void Salida_CogerAposito()
+{
+    //Cerrar pinza (servo pinza) 
+    //Posible delay para asegurarse que le da tiempo a realizar acción (no está realimentado)
+}
+
+void Salida_Colocar()
+{
+    //Mover al ángulo de entrada (servo codo)
+}
+
+void Salida_Acercar()
+{
+    //Mover a la posición de entrada (motores base)
+}
+
+void Salida_Rotar()
+{
+    //Rotar muñeca (servo muñeca)
+    //Posible delay para asegurarse que le da tiempo a realizar acción (no está realimentado)
+}
+
+void Salida_Alejar()
+{
+    //Alejar de la posición de entrada (motores base)
+}
+
+void Salida_Vuelta()
+{
+    //Mover a la posición del apósito (servo codo)
+}
+
+void Salida_SoltarAposito()
+{
+    //Abrir pinza (servo pinza) 
+    //Posible delay para asegurarse que le da tiempo a realizar acción (no está realimentado)    
+}
+
+void setup()
+{
+    //Asociar pines a servos
+    servoCodo.attach(pin_servoCodo); 
+
+    Serial.begin(9600);              //Consola
+    estadoActual = E_Inicial;        //Estado inicial
+    Salida_Inicial();                //Llevar a estado inicial
+}
+
+void loop()
+{
+    leerEntrada();                   //Función que lee las entradas (sensores) constantemente
+    actualizarEstado();              //Función que actualiza los estados (no los cambia)
+}
+
+//Función que actualiza los estados (no los cambia)
+void actualizarEstado()
+{
+    switch (estadoActual)
+    {
+    case E_Inicial: Estado_Inicial(); break;
+    case E_Aposito: Estado_Aposito(); break;
+    case E_CogerAposito: Estado_CogerAposito(); break;
+    case E_Colocar: Estado_Colocar(); break;
+    case E_Acercar: Estado_Acercar(); break;
+    case E_Rotar: Estado_Rotar(); break;
+    case E_Alejar: Estado_Alejar(); break;
+    case E_Vuelta: Estado_Vuelta(); break;
+    case E_SoltarAposito: Estado_SoltarAposito(); break;
+ 
+    }
+}
+
+//Función que lee todas las entradas (sensores) y actualiza las variables globales
+void leerEntrada()
+{
+
+    raw_sensorCodo = analogRead(pin_sensorCodo);  //Guarda la lectura del sensor del codo sin pasar a grados
+
+}
+
+//Funcion que cambia el estado y llama a las salidas
+
+void cambiarEstado (Estado estadoNuevo)
+{
+    estadoActual = estadoNuevo;
+
+    switch (estadoActual)
+    {
+    case E_Inicial: Salida_Inicial(); break;
+    case E_Aposito: Salida_Aposito(); break;
+    case E_CogerAposito: Salida_CogerAposito(); break;
+    case E_Colocar: Salida_Colocar(); break;
+    case E_Acercar: Salida_Acercar(); break;
+    case E_Rotar: Salida_Rotar(); break;
+    case E_Alejar: Salida_Alejar(); break;
+    case E_Vuelta: Salida_Vuelta(); break;
+    case E_SoltarAposito: Salida_SoltarAposito(); break;
+    default: break;
+    }
 }
