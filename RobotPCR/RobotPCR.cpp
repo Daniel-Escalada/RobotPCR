@@ -4,8 +4,14 @@
 
 //Defines con los pines de la placa
 
-#define pin_sensorCodo A0  //Ejemplo pin sensor del codo
-#define pin_servoCodo 1    //Ejemplo pin servo del codo
+#define pin_sensorCodo A0  //Pin sensor del codo
+#define pin_servoCodo 1    //Pin servo del codo
+#define pin_sensorBase A1  //Pin sensor de la base
+#define pin_motorBase_1 2  //Pin salida 1 del motor de la base
+#define pin_motorBase_2 3  //Pin salida 2 del motor de la base
+#define pin_servoMuneca 4    //Pin servo de la muñeca
+#define pin_servoPinza 5    //Pin servo de la pinza
+
 
 //Estados
 
@@ -25,7 +31,7 @@ enum Estado
 
 //Actuadores
 
-Servo servoCodo;  //Ejemplo
+Servo servoCodo, servoMuneca, servoPinza;  
 
 //Variables globales
 
@@ -33,7 +39,10 @@ Estado estadoActual;
 
 ////Sensores
 
-int raw_sensorCodo;
+int raw_sensorCodo;  //Lectura sin procesa del sensor del codo
+int raw_sensorBase;  //Lectura sin procesar del sensor de la base
+
+
 
 //Llamada a transiciones de estado 
 
@@ -109,44 +118,77 @@ void Salida_CogerAposito()
 {
     //Cerrar pinza (servo pinza) 
     //Posible delay para asegurarse que le da tiempo a realizar acción (no está realimentado)
+
+    servoPinza.write();
+    delay(5000);
+    
 }
 
 void Salida_Colocar()
 {
     //Mover al ángulo de entrada (servo codo)
+
+    servoCodo.write();
 }
 
 void Salida_Acercar()
 {
     //Mover a la posición de entrada (motores base)
+
+    //Una forma: mover el motor hasta que el sensor detecte que está en posición
+
+    do {
+
+    } while ();
 }
 
 void Salida_Rotar()
 {
     //Rotar muñeca (servo muñeca)
     //Posible delay para asegurarse que le da tiempo a realizar acción (no está realimentado)
+
+    for (int i = 0; i < 3; i++) {    //Hace 3 movimientos de rotacion
+        servoMuneca.write(90);
+        servoMuneca.write(0);
+        servoMuneca.write(180);
+        servoMuneca.write(90);
+    }
+    delay(10000);
 }
 
 void Salida_Alejar()
 {
     //Alejar de la posición de entrada (motores base)
+
+    //Una forma: mover el motor hasta que el sensor detecte que está en posición
+
+    do {
+
+    } while ();
 }
 
 void Salida_Vuelta()
 {
     //Mover a la posición del apósito (servo codo)
+
+    servoCodo.write();
 }
 
 void Salida_SoltarAposito()
 {
     //Abrir pinza (servo pinza) 
     //Posible delay para asegurarse que le da tiempo a realizar acción (no está realimentado)    
+
+    servoPinza.write();
+    delay(5000);
 }
 
 void setup()
 {
     //Asociar pines a servos
     servoCodo.attach(pin_servoCodo); 
+    servoMuneca.attach(pin_servoMuneca);
+    servoPinza.attach(pin_servoPinza);
 
     Serial.begin(9600);              //Consola
     estadoActual = E_Inicial;        //Estado inicial
@@ -182,6 +224,7 @@ void leerEntrada()
 {
 
     raw_sensorCodo = analogRead(pin_sensorCodo);  //Guarda la lectura del sensor del codo sin pasar a grados
+    raw_sensorBase = analogRead(pin_sensorBase);  //Guarda la lectura del sensor de la base sin pasar a grados
 
 }
 
