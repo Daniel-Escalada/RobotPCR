@@ -149,11 +149,14 @@ void Salida_Rotar()
 
     for (int i = 0; i < 3; i++) {    //Hace 3 movimientos de rotacion
         servoMuneca.write(90);
-        servoMuneca.write(0);
-        servoMuneca.write(180);
+        delay(500);
+        servoMuneca.write(135);
+        delay(500);
+        servoMuneca.write(45);
+        delay(500);
         servoMuneca.write(90);
     }
-    delay(10000);
+    delay(1000);
 }
 
 void Salida_Alejar()
