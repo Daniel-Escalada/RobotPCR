@@ -1,8 +1,10 @@
 //Librerías
 
 #include <Servo.h>
+#include <UltrasonicSensor.h>
 
 //Defines con los pines de la placa
+//Cambair los pines para que sean ~ 
 
 #define pin_sensorCodo A0  //Pin sensor del codo
 #define pin_servoCodo 1    //Pin servo del codo
@@ -11,6 +13,9 @@
 #define pin_motorBase_2 3  //Pin salida 2 del motor de la base
 #define pin_servoMuneca 4    //Pin servo de la muñeca
 #define pin_servoPinza 5    //Pin servo de la pinza
+#define pin_Ultra_Trigger 6   //Pin Trigger del ultrasonido
+#define pin_Ultra_Echo  7  //Pin Echo del ultrasonido
+
 
 
 //Estados
@@ -39,8 +44,11 @@ Estado estadoActual;
 
 ////Sensores
 
+UltrasonicSensor ultrasonico(pin_Ultra_Trigger, pin_Ultra_Echo);
+
 int raw_sensorCodo;  //Lectura sin procesa del sensor del codo
 int raw_sensorBase;  //Lectura sin procesar del sensor de la base
+int distancia_Ultra;  //Lectura del ultrasonidos en mm
 
 
 
@@ -228,6 +236,7 @@ void leerEntrada()
 
     raw_sensorCodo = analogRead(pin_sensorCodo);  //Guarda la lectura del sensor del codo sin pasar a grados
     raw_sensorBase = analogRead(pin_sensorBase);  //Guarda la lectura del sensor de la base sin pasar a grados
+    distancia_Ultra = ultrasonico.distanceInMillimeters();
 
 }
 
