@@ -15,7 +15,8 @@
 #define pin_servoPinza 5    //Pin servo de la pinza
 #define pin_Ultra_Trigger 6   //Pin Trigger del ultrasonido
 #define pin_Ultra_Echo  7  //Pin Echo del ultrasonido
-#define pin_Enable         //Pin botón de enable 
+#define pin_EnableRobot         //Pin botón de enable 
+#define pin_Enable_motorBase //Pin enable del motor 1
 
 
 
@@ -44,6 +45,30 @@ Servo servoCodo, servoMuneca, servoPinza;
 
 Estado estadoActual;
 
+////PID DC
+
+double kp_DC = 9;
+double kd_DC = 0;
+double ki_DC = 0;
+
+double Input_DC, Output_DC, Setpoint_DC;
+double salida_DC;
+unsigned long tiempoActual_DC, tiempoAnterior_DC;
+double tiempoTranscurrido_DC;
+double error_DC, errorAnterior_DC, integralError_DC, derivadaError_DC;
+
+///PID SERVO
+
+double kp_SERVO = 0.5;
+double kd_SERVO = 0;
+double ki_SERVO = 0;
+
+double Input_SERVO, Output_SERVO, Setpoint_SERVO;
+double salida_SERVO;
+unsigned long tiempoActual_SERVO, tiempoAnterior_SERVO;
+double tiempoTranscurrido_SERVO;
+double error_SERVO, errorAnterior_SERVO, integralError_SERVO, derivadaError_SERVO;
+
 ////Sensores
 
 UltrasonicSensor ultrasonico(pin_Ultra_Trigger, pin_Ultra_Echo);
@@ -59,61 +84,61 @@ int distancia_Ultra;  //Lectura del ultrasonidos en mm
 
 void Estado_Inicial()
 {
-    if ()                                           //Si se encuenta en la posición inicial (sensor codo y sensor base) 
+    if ()                                           //Si se encuenta en la posición inicial (sensor codo) 
         cambiarEstado(Estado::E_Base);
 }
 
 void Estado_Base()
 {
-    if ()                                           //Si se pulsa el botón enable
+    if (digitalRead(pin_EnableRobot))                                           //Si se pulsa el botón enable
         cambiarEstado(Estado::E_Aposito);
 }
 
 void Estado_Aposito()
 {
-    if ()                                           //Si se encuenta en la posición del apósito (sensor codo (sensor base redundante)) 
+    if (1)                                           //Si se encuenta en la posición del apósito (sensor codo (sensor base redundante)) 
         cambiarEstado(Estado::E_CogerAposito);
 }
 
 void Estado_CogerAposito()
 {
-    if ()                                           //Si la pinza se ha cerrado, este mov. no está realimentado así que habrá que poner un delay y ya
+    if (1)                                           //Si la pinza se ha cerrado, este mov. no está realimentado así que habrá que poner un delay y ya
         cambiarEstado(Estado::E_Colocar);
 }
 
 void Estado_Colocar()
 {
-    if ()                                           //Si se ha colocado en el ángulo de entrada (sensor codo (sensor base redundante)) 
+    if (1)                                           //Si se ha colocado en el ángulo de entrada (sensor codo (sensor base redundante)) 
         cambiarEstado(Estado::E_Acercar);
 }
 
 void Estado_Acercar()
 {
-    if ()                                           //Si se acercado hasta la entrada (sensor base (sensor codo redundante)) 
+    if (1)                                           //Si se acercado hasta la entrada (sensor base (sensor codo redundante)) 
         cambiarEstado(Estado::E_Rotar);
 }
 
 void Estado_Rotar()
 {
-    if ()                                           //Si la muñeca ha rotado, este mov. no esta realimentado así que habrá que poner un delay y ya 
+    if (1)                                           //Si la muñeca ha rotado, este mov. no esta realimentado así que habrá que poner un delay y ya 
         cambiarEstado(Estado::E_Alejar);
 }
 
 void Estado_Alejar()
 {
-    if ()                                           //Si se ha alejado de la entrada hasta la posición inicial (sensor base (sensor codo redundante)) 
+    if (1)                                           //Si se ha alejado de la entrada hasta la posición inicial (sensor base (sensor codo redundante)) 
         cambiarEstado(Estado::E_Vuelta);
 }
 
 void Estado_Vuelta()
 {
-    if ()                                           //Si se encuenta en la posición del apósito (sensor codo (sensor base redundante)) 
+    if (1)                                           //Si se encuenta en la posición del apósito (sensor codo (sensor base redundante)) 
         cambiarEstado(Estado::E_SoltarAposito);
 }
 
 void Estado_SoltarAposito()
 {
-    if ()                                           //Si se encuenta en la posición del apósito (sensor codo (sensor base redundante)) 
+    if (1)                                           //Si se encuenta en la posición del apósito (sensor codo (sensor base redundante)) 
         cambiarEstado(Estado::E_Inicial);           //Esto depende si se añade nuevo estado    
 }
 
@@ -121,7 +146,28 @@ void Estado_SoltarAposito()
 
 void Salida_Inicial()
 {
-    //Mover a la posición inicial (servo codo, motores base y servo muñeca) y abrir pinza (servo pinza)
+    //Mover a la posición inicial (servo codo, motores base y servo muñeca) y abrir pinza (servo pinza
+    //Codo
+    Input_SERVO = map(raw_sensorCodo, 61, 602, 0, 180);
+    Setpoint_SERVO = 90;                                      //Posición inicial
+    salida_SERVO = 0;
+    int count = 0;
+    while(1) {
+        Input_SERVO = map(raw_sensorCodo, 61, 602, 0, 180);
+        Output_SERVO = calcPID_SERVO(Input_SERVO);
+
+        if (not isnan(Output_SERVO)) salida_SERVO = salida_SERVO + Output_SERVO;  //La primera iteración output es "nan"
+
+        servoCodo.write(salida_SERVO);             
+
+        Output_SERVO = raw_sensorCodo;
+
+        if (Output_SERVO == 0) count++;
+        if (count > 20) break;
+
+        delay(100);
+    }
+ 
 }
 
 void Salida_Base()
@@ -133,7 +179,25 @@ void Salida_Aposito()
 {
     //Mover a la posición del apósito (servo codo)
 
-    servoCodo.write();
+    Input_SERVO = map(raw_sensorCodo, 61, 602, 0, 180);
+    Setpoint_SERVO = 180;                                      //Posición aposito
+    salida_SERVO = 0;
+    int count = 0;
+    while (1) {
+        Input_SERVO = map(raw_sensorCodo, 61, 602, 0, 180);
+        Output_SERVO = calcPID_SERVO(Input_SERVO);
+
+        if (not isnan(Output_SERVO)) salida_SERVO = salida_SERVO + Output_SERVO;  //La primera iteración output es "nan"
+
+        servoCodo.write(salida_SERVO);
+
+        Output_SERVO = raw_sensorCodo;
+
+        if (Output_SERVO == 0) count++;
+        if (count > 20) break;
+
+        delay(100);
+    }
 }
 
 void Salida_CogerAposito()
@@ -150,18 +214,72 @@ void Salida_Colocar()
 {
     //Mover al ángulo de entrada (servo codo)
 
-    servoCodo.write();
+    Input_SERVO = map(raw_sensorCodo, 61, 602, 0, 180);
+    Setpoint_SERVO = 0;                                      //Posición entrada
+    salida_SERVO = 0;
+    int count = 0;
+    while (1) {
+        Input_SERVO = map(raw_sensorCodo, 61, 602, 0, 180);
+        Output_SERVO = calcPID_SERVO(Input_SERVO);
+
+        if (not isnan(Output_SERVO)) salida_SERVO = salida_SERVO + Output_SERVO;  //La primera iteración output es "nan"
+
+        servoCodo.write(salida_SERVO);
+
+        Output_SERVO = raw_sensorCodo;
+
+        if (Output_SERVO == 0) count++;
+        if (count > 20) break;
+
+        delay(100);
+    }
 }
 
 void Salida_Acercar()
 {
     //Mover a la posición de entrada (motores base)
 
-    //Una forma: mover el motor hasta que el sensor detecte que está en posición
+    Setpoint_DC = 950;                            //Se elige la salida deseada (0-1023)
+    int count = 0;
+    
+while(1) {
 
-    do {
+    Input_DC = raw_sensorBase;                     //entrada del sistema (0-1023)
+    Output_DC = calcPID_DC(Input_DC);
 
-    } while ();
+
+    if (Input_DC < 100 or Input_DC > 3000) {        //Límites de seguridad 
+      
+        digitalWrite(pin_Enable_motorBase, HIGH); //Si pasa los límites se apaga el motor 
+        digitalWrite(pin_motorBase_1, LOW);
+        digitalWrite(pin_motorBase_2, LOW);
+    }
+    else {
+        if (Output_DC < 0) {                                  //Salida del pid negativa (hacia un lado)
+            salida_DC = map(abs(Output_DC), 0, kp_DC * 1023, 50, 255);       //Pasar la salida a valores de pwm (de 0 al valor máximo, el 50 es para que no vaya demasiado lento)                        
+            analogWrite(pin_Enable_motorBase, abs(salida));                     
+
+            digitalWrite(pin_motorBase_1, HIGH);
+            digitalWrite(pin_motorBase_2, LOW);
+
+        }
+        if (Output_DC > 0) {                          //Salida del controlador
+            salida_DC = map(Output_DC, 0, kp_DC * 1023, 50, 255);   //Función map que adecua los posibles valores de 
+                                                     //salida del sensor a un ciclo de trabajo de 25%-100% del motor                  
+            analogWrite(pin_Enable_motorBase, abs(salida_DC));             //Señal PWM enviada al motor
+
+            digitalWrite(pin_motorBase_1 LOW);                   //Señales que controlan el sentido de rotación
+            digitalWrite(pin_motorBase_2, HIGH);
+        }
+        if (Output == 0) {
+            digitalWrite(pin_Enable_motorBase, HIGH);       //Si el error es cero no se mueve 
+
+            digitalWrite(pin_motorBase_1, LOW);
+            digitalWrite(pin_motorBase_2, LOW);
+        }
+        if (Output_DC == 0) count++;
+        if (count > 20) break;
+    }
 }
 
 void Salida_Rotar()
@@ -185,18 +303,73 @@ void Salida_Alejar()
 {
     //Alejar de la posición de entrada (motores base)
 
-    //Una forma: mover el motor hasta que el sensor detecte que está en posición
+    Setpoint_DC = 200;                            //Se elige la salida deseada (0-1023)
+    int count = 0;
 
-    do {
+    while (1) {
 
-    } while ();
+        Input_DC = raw_sensorBase;                     //entrada del sistema (0-1023)
+        Output_DC = calcPID_DC(Input_DC);
+
+        if (Input_DC < 100 or Input_DC > 3000) {        //Límites de seguridad 
+
+            digitalWrite(pin_Enable_motorBase, HIGH); //Si pasa los límites se apaga el motor 
+            digitalWrite(pin_motorBase_1, LOW);
+            digitalWrite(pin_motorBase_2, LOW);
+        }
+        else {
+            if (Output_DC < 0) {                                  //Salida del pid negativa (hacia un lado)
+                salida_DC = map(abs(Output_DC), 0, kp_DC * 1023, 50, 255);       //Pasar la salida a valores de pwm (de 0 al valor máximo, el 50 es para que no vaya demasiado lento)                        
+                analogWrite(pin_Enable_motorBase, abs(salida));
+
+                digitalWrite(pin_motorBase_1, HIGH);
+                digitalWrite(pin_motorBase_2, LOW);
+
+            }
+            if (Output_DC > 0) {                          //Salida del controlador
+                salida_DC = map(Output_DC, 0, kp_DC * 1023, 50, 255);   //Función map que adecua los posibles valores de 
+                                                         //salida del sensor a un ciclo de trabajo de 25%-100% del motor                  
+                analogWrite(pin_Enable_motorBase, abs(salida_DC));             //Señal PWM enviada al motor
+
+                digitalWrite(pin_motorBase_1 LOW);                   //Señales que controlan el sentido de rotación
+                digitalWrite(pin_motorBase_2, HIGH);
+            }
+            if (Output == 0) {
+                digitalWrite(pin_Enable_motorBase, HIGH);       //Si el error es cero no se mueve 
+
+                digitalWrite(pin_motorBase_1, LOW);
+                digitalWrite(pin_motorBase_2, LOW);
+            }
+        }
+        if (Output_DC == 0) count++;
+        if (count > 20) break;
+    }
 }
 
 void Salida_Vuelta()
 {
     //Mover a la posición del apósito (servo codo)
 
-    servoCodo.write();
+    Input_SERVO = map(raw_sensorCodo, 61, 602, 0, 180);
+    Setpoint_SERVO = 180;                                      //Posición aposito
+    salida_SERVO = 0;
+    int count = 0;
+
+    while (1) {
+        Input_SERVO = map(raw_sensorCodo, 61, 602, 0, 180);
+        Output_SERVO = calcPID_SERVO(Input_SERVO);
+
+        if (not isnan(Output_SERVO)) salida_SERVO = salida_SERVO + Output_SERVO;  //La primera iteración output es "nan"
+
+        servoCodo.write(salida_SERVO);
+
+        Output_SERVO = raw_sensorCodo;
+
+        if (Output_SERVO == 0) count++;
+        if (count > 20) break;
+
+        delay(100);
+    }
 }
 
 void Salida_SoltarAposito()
@@ -215,6 +388,8 @@ void setup()
     servoMuneca.attach(pin_servoMuneca);
     servoPinza.attach(pin_servoPinza);
 
+    pinMode(pin_EnableRobot, INPUT);    
+
     Serial.begin(9600);              //Consola
     estadoActual = E_Inicial;        //Estado inicial
     Salida_Inicial();                //Llevar a estado inicial
@@ -224,6 +399,9 @@ void loop()
 {
     leerEntrada();                   //Función que lee las entradas (sensores) constantemente
     actualizarEstado();              //Función que actualiza los estados (no los cambia)
+    Serial.print("Distancia: ");
+    Serial.print(distancia_Ultra);
+    Serial.println(" mm");
 }
 
 //Función que actualiza los estados (no los cambia)
@@ -276,3 +454,39 @@ void cambiarEstado (Estado estadoNuevo)
     default: break;
     }
 }
+double calcPID_DC(double inp) {
+
+    tiempoActual_DC = millis();                                          //Obtiene el tiempo actual con la función millis
+    tiempoTranscurrido_DC = (double)(tiempoActual_DC - tiempoAnterior_DC);     //Calcula el tiempo transcurrido
+
+    error_DC = Setpoint_DC - inp;                                           //Calcula el error entre la referencia y la realimentación
+    integralError_DC += error_DC * tiempoTranscurrido_DC;                      //Calcular la integral del error
+    derivadaError_DC = (error_DC - errorAnterior_DC) / tiempoTranscurrido_DC;     //Calcular la derivada del error
+
+    double output = kp_DC * error_DC + ki_DC * integralError_DC + kd_DC * derivadaError_DC;   //Salida del PID
+
+    if (abs(output) < 10) output = 0;     //Para quitar cambios si está cerca de 0
+    
+    errorAnterior_DC = error_DC;                                            //Guarda error anterior
+    tiempoAnterior_DC = tiempoActual_DC;                                    //Guarda el tiempo anterior
+
+    return output;
+}
+
+double calcPID_SERVO(double inp) {
+
+    tiempoActual_SERVO = millis();                                          //Obtiene el tiempo actual con la función millis
+    tiempoTranscurrido_SERVO = (double)(tiempoActual_SERVO - tiempoAnterior_SERVO);     //Calcula el tiempo transcurrido
+
+    error_SERVO = Setpoint_SERVO - inp;                                           //Calcula el error entre la referencia y la realimentación
+    integralError_SERVO += error_SERVO * tiempoTranscurrido_SERVO;                      //Calcular la integral del error
+    derivadaError_SERVO = (error_SERVO - errorAnterior_SERVO) / tiempoTranscurrido_SERVO;     //Calcular la derivada del error
+
+    double output = kp_SERVO * error_SERVO + ki_SERVO * integralError_SERVO + kd_SERVO * derivadaError_SERVO;   //Salida del PID
+
+    errorAnterior_SERVO = error_SERVO;                                            //Guarda error anterior
+    tiempoAnterior_SERVO = tiempoActual_SERVO;                                    //Guarda el tiempo anterior
+
+    return output;
+}
+
