@@ -146,7 +146,7 @@ void Estado_SoltarAposito()
 
 void Salida_Inicial()
 {
-    //Mover a la posición inicial (servo codo, motores base y servo muñeca) y abrir pinza (servo pinza
+    //Mover a la posición inicial (servo codo, motores base y servo muñeca) y abrir pinza (servo pinza)
     //Codo
     Input_SERVO = map(raw_sensorCodo, 61, 602, 0, 180);
     Setpoint_SERVO = 90;                                      //Posición inicial
@@ -205,7 +205,7 @@ void Salida_CogerAposito()
     //Cerrar pinza (servo pinza) 
     //Posible delay para asegurarse que le da tiempo a realizar acción (no está realimentado)
 
-    servoPinza.write();
+    servoPinza.write(0);
     delay(5000);
     
 }
@@ -377,7 +377,7 @@ void Salida_SoltarAposito()
     //Abrir pinza (servo pinza) 
     //Posible delay para asegurarse que le da tiempo a realizar acción (no está realimentado)    
 
-    servoPinza.write();
+    servoPinza.write(180);
     delay(5000);
 }
 
@@ -399,6 +399,7 @@ void loop()
 {
     leerEntrada();                   //Función que lee las entradas (sensores) constantemente
     actualizarEstado();              //Función que actualiza los estados (no los cambia)
+
     Serial.print("Distancia: ");
     Serial.print(distancia_Ultra);
     Serial.println(" mm");
@@ -483,6 +484,8 @@ double calcPID_SERVO(double inp) {
     derivadaError_SERVO = (error_SERVO - errorAnterior_SERVO) / tiempoTranscurrido_SERVO;     //Calcular la derivada del error
 
     double output = kp_SERVO * error_SERVO + ki_SERVO * integralError_SERVO + kd_SERVO * derivadaError_SERVO;   //Salida del PID
+
+    if (abs(output) < 10) output = 0;     //Para quitar cambios si está cerca de 0
 
     errorAnterior_SERVO = error_SERVO;                                            //Guarda error anterior
     tiempoAnterior_SERVO = tiempoActual_SERVO;                                    //Guarda el tiempo anterior
