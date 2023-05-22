@@ -15,6 +15,7 @@
 #define pin_servoPinza 5    //Pin servo de la pinza
 #define pin_Ultra_Trigger 6   //Pin Trigger del ultrasonido
 #define pin_Ultra_Echo  7  //Pin Echo del ultrasonido
+#define pin_Enable         //Pin botón de enable 
 
 
 
@@ -22,6 +23,7 @@
 
 enum Estado
 {
+    E_Base,          //Posición de reposo que espera el boton de enable
     E_Inicial,       //Posición inicial, pinza abierta
     E_Aposito,       //Pinza alineada con el apósito (rotación codo)
     E_CogerAposito,  //Cierre de la pinza (mov. sin realimentación
@@ -54,9 +56,16 @@ int distancia_Ultra;  //Lectura del ultrasonidos en mm
 
 //Llamada a transiciones de estado 
 
+
 void Estado_Inicial()
 {
     if ()                                           //Si se encuenta en la posición inicial (sensor codo y sensor base) 
+        cambiarEstado(Estado::E_Base);
+}
+
+void Estado_Base()
+{
+    if ()                                           //Si se pulsa el botón enable
         cambiarEstado(Estado::E_Aposito);
 }
 
@@ -105,7 +114,7 @@ void Estado_Vuelta()
 void Estado_SoltarAposito()
 {
     if ()                                           //Si se encuenta en la posición del apósito (sensor codo (sensor base redundante)) 
-        cambiarEstado(Estado::E_Inicial);        //Esto depende si se añade nuevo estado    
+        cambiarEstado(Estado::E_Inicial);           //Esto depende si se añade nuevo estado    
 }
 
 //Salidas de cada estado (acciones)
@@ -113,6 +122,11 @@ void Estado_SoltarAposito()
 void Salida_Inicial()
 {
     //Mover a la posición inicial (servo codo, motores base y servo muñeca) y abrir pinza (servo pinza)
+}
+
+void Salida_Base()
+{
+    //No hace nada, es un estado transitorio
 }
 
 void Salida_Aposito()
@@ -218,6 +232,7 @@ void actualizarEstado()
     switch (estadoActual)
     {
     case E_Inicial: Estado_Inicial(); break;
+    case E_Base: Estado_Base(); break;
     case E_Aposito: Estado_Aposito(); break;
     case E_CogerAposito: Estado_CogerAposito(); break;
     case E_Colocar: Estado_Colocar(); break;
@@ -249,6 +264,7 @@ void cambiarEstado (Estado estadoNuevo)
     switch (estadoActual)
     {
     case E_Inicial: Salida_Inicial(); break;
+    case E_Base: Salida_Base(); break;
     case E_Aposito: Salida_Aposito(); break;
     case E_CogerAposito: Salida_CogerAposito(); break;
     case E_Colocar: Salida_Colocar(); break;
